@@ -10,6 +10,14 @@ PROJECTS_DIR = os.path.join(app.root_path, 'Projects')
 COURSE_MODELS_DIR = os.path.join(PROJECTS_DIR, 'course_models')
 RENDER_CACHE_DIR = os.path.join(COURSE_MODELS_DIR, '_render_cache')
 
+
+@app.after_request
+def add_cache_headers(resp):
+    # Let browsers cache static assets so repeat visits load instantly.
+    if request.path.startswith('/static/') or request.path.startswith('/Projects/'):
+        resp.headers['Cache-Control'] = 'public, max-age=604800'  # 7 days
+    return resp
+
 # Custom Excel number formats the in-browser viewer's parser can't handle,
 # mapped to a built-in equivalent that renders the same for model values.
 FORMAT_FIXES = {

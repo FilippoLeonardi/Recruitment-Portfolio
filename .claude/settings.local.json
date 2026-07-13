@@ -29,7 +29,14 @@
       "Bash(gh auth *)",
       "Bash(git remote *)",
       "Bash(git -c user.email=fleonardi@college.harvard.edu -c 'user.name=Filippo Leonardi' commit -q .claude/settings.local.json -m 'Update local Claude Code settings *)",
-      "Bash(git ls-remote *)"
+      "Bash(git ls-remote *)",
+      "Bash(brew --version)",
+      "Bash(brew install *)",
+      "Bash(git config *)",
+      "Bash(git push *)",
+      "Bash(gh api *)",
+      "Bash(git add *)",
+      "Bash(git -c user.email=fleonardi@college.harvard.edu -c 'user.name=Filippo Leonardi' commit -q -m 'Optimize load speed: compress images, lazy-load, cache headers, keep-alive *)"
     ]
   }
 }
