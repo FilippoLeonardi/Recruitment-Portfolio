@@ -288,7 +288,7 @@ const MODAL_DATA = {
     calc:'/Projects/lbo_calculator/index.html',
   },
   p2: {
-    hue:'265', year:'2026', image:'static/images/certificate.jpeg',
+    hue:'265', year:'2026', image:'static/images/Certificate.jpeg',
     title:'Financial Modeling and Valuation Intensive',
     tags:[['Valuation Analysis','t-green'],['Three-Statement Forecasting','t-orange'],['Corporate Finance','t-blue']],
     desc:'Completed an intensive financial modeling course with City Investment Training, covering accounting, three-statement modeling, valuation, LBO analysis, and M&A accretion/dilution, including a full Burger King case study model built from first principles.',

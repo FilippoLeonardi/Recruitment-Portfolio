@@ -4,7 +4,11 @@ import sys
 import zipfile
 from flask import Flask, render_template, request, jsonify, send_from_directory
 
-app = Flask("Filippo Leonardi's Portfolio")
+# The assets live in a capital-S "Static" folder. Linux (Render) is
+# case-sensitive, so point Flask at it explicitly while keeping the
+# conventional lowercase "/static" URL path that the templates use.
+app = Flask("Filippo Leonardi's Portfolio",
+            static_folder='Static', static_url_path='/static')
 
 PROJECTS_DIR = os.path.join(app.root_path, 'Projects')
 COURSE_MODELS_DIR = os.path.join(PROJECTS_DIR, 'course_models')
