@@ -18,8 +18,15 @@ RENDER_CACHE_DIR = os.path.join(COURSE_MODELS_DIR, '_render_cache')
 @app.after_request
 def add_cache_headers(resp):
     # Let browsers cache static assets so repeat visits load instantly.
-    if request.path.startswith('/static/') or request.path.startswith('/Projects/'):
-        resp.headers['Cache-Control'] = 'public, max-age=604800'  # 7 days
+    path = request.path
+    if path.startswith('/static/') or path.startswith('/Projects/'):
+        if path.lower().endswith('.pdf'):
+            # Documents (resume, letters, papers) get replaced in place, so
+            # always revalidate — the server returns a cheap 304 when the file
+            # is unchanged, but a swapped file shows up immediately.
+            resp.headers['Cache-Control'] = 'no-cache'
+        else:
+            resp.headers['Cache-Control'] = 'public, max-age=86400'  # 1 day
     return resp
 
 # Custom Excel number formats the in-browser viewer's parser can't handle,
