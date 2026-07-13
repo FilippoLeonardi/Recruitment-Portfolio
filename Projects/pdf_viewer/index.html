@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PDF Viewer</title>
+<style>
+  html, body { margin:0; height:100%; background:#525659; overflow-y:auto; }
+  #pages { display:flex; flex-direction:column; align-items:center; gap:16px; padding:20px 0 60px; }
+  .page-wrap { position:relative; box-shadow:0 2px 10px rgba(0,0,0,.4); }
+  canvas { background:#fff; display:block; }
+  .pdf-link { position:absolute; cursor:pointer; }
+  .pdf-link:hover { background:rgba(79,142,247,.15); outline:1px solid rgba(79,142,247,.4); }
+  #status {
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    color:#cfd4dc; font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    flex-direction:column; gap:14px; text-align:center; padding:30px; box-sizing:border-box;
+  }
+  .spinner {
+    width:30px; height:30px; border-radius:50%;
+    border:3px solid rgba(255,255,255,.15); border-top-color:#4f8ef7;
+    animation:spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="status"><div class="spinner"></div><div>Loading document…</div></div>
+<div id="pages"></div>
+
+<script type="module">
+  import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs';
+
+  const $status = document.getElementById('status');
+  const $pages = document.getElementById('pages');
+
+  const params = new URLSearchParams(window.location.search);
+  const fileUrl = params.get('file');
+
+  async function render() {
+    if (!fileUrl) {
+      $status.innerHTML = '<div>No file specified.</div>';
+      return;
+    }
+    try {
+      const doc = await pdfjsLib.getDocument(fileUrl).promise;
+      $status.style.display = 'none';
+      const targetWidth = Math.min(window.innerWidth - 40, 900);
+
+      for (let i = 1; i <= doc.numPages; i++) {
+        const page = await doc.getPage(i);
+        const baseViewport = page.getViewport({ scale: 1 });
+        const scale = (targetWidth / baseViewport.width) * (window.devicePixelRatio || 1);
+        const viewport = page.getViewport({ scale });
+        const cssWidth = viewport.width / (window.devicePixelRatio || 1);
+        const cssHeight = viewport.height / (window.devicePixelRatio || 1);
+
+        const pageWrap = document.createElement('div');
+        pageWrap.className = 'page-wrap';
+        pageWrap.style.width = cssWidth + 'px';
+        pageWrap.style.height = cssHeight + 'px';
+        $pages.appendChild(pageWrap);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvas.style.width = cssWidth + 'px';
+        canvas.style.height = cssHeight + 'px';
+        pageWrap.appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport }).promise;
+
+        // The canvas above is just a rasterized image of the page -- it has
+        // no interactivity of its own, so any hyperlinks the PDF actually
+        // contains (e.g. a resume's LinkedIn/portfolio links) would be
+        // visible but dead. Overlay a real, clickable <a> over each of the
+        // PDF's own link annotations, positioned from its rect (converted
+        // from PDF user space into this page's on-screen CSS pixels) so
+        // clicking it behaves the same as in a native PDF viewer.
+        const annotations = await page.getAnnotations();
+        const cssScale = 1 / (window.devicePixelRatio || 1);
+        annotations.forEach(ann => {
+          if (ann.subtype !== 'Link') return;
+          const url = ann.url || ann.unsafeUrl;
+          if (!url) return; // internal (in-document) link target, nothing to open
+          const rect = viewport.convertToViewportRectangle(ann.rect);
+          const x = Math.min(rect[0], rect[2]) * cssScale;
+          const y = Math.min(rect[1], rect[3]) * cssScale;
+          const w = Math.abs(rect[2] - rect[0]) * cssScale;
+          const h = Math.abs(rect[3] - rect[1]) * cssScale;
+          const a = document.createElement('a');
+          a.className = 'pdf-link';
+          a.href = url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.title = url;
+          a.style.left = x + 'px';
+          a.style.top = y + 'px';
+          a.style.width = w + 'px';
+          a.style.height = h + 'px';
+          pageWrap.appendChild(a);
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      $status.style.display = 'flex';
+      $status.innerHTML = '<div style="color:#f2a;font-weight:600;">Failed to load document: ' + (err.message || err) + '</div>';
+    }
+  }
+
+  render();
+</script>
+</body>
+</html>

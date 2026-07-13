@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LBO Calculator</title>
+<style>
+  :root{
+    --ink:#141925; --muted:#6b7280; --line:#e6e8ec; --line-2:#eef0f3;
+    --blue:#1F4E79; --blue-2:#2E75B6; --bg:#f6f7f9; --card:#fff;
+    --green:#0f9d58; --red:#d64545; --amber:#e8a13a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:44px 20px 90px}
+  header h1{font-size:27px;letter-spacing:-.02em;margin:0 0 6px}
+  header p{color:var(--muted);margin:0 0 26px;max-width:64ch}
+  .layout{display:grid;grid-template-columns:340px 1fr;gap:24px;align-items:start}
+  @media (max-width:900px){.layout{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  .card + .card{margin-top:20px}
+  .gt{font-size:11.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--blue-2);font-weight:700;margin:20px 0 11px}
+  .gt:first-child{margin-top:0}
+  .frow{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:4px}
+  .field input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff;transition:border-color .15s,box-shadow .15s}
+  .field input:focus{outline:none;border-color:var(--blue-2);box-shadow:0 0 0 3px rgba(46,117,182,.14)}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media (max-width:560px){.metrics{grid-template-columns:repeat(2,1fr)}}
+  .metric{border:1px solid var(--line);border-radius:12px;padding:15px 16px;background:linear-gradient(180deg,#fbfcfd,#fff)}
+  .metric .k{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+  .metric .v{font-size:26px;font-weight:700;letter-spacing:-.02em}
+  .metric.accent .v{color:var(--blue)}
+  .sub{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px}
+  @media (max-width:560px){.sub{grid-template-columns:repeat(2,1fr)}}
+  .sub .k{font-size:11.5px;color:var(--muted)}
+  .sub .v{font-size:16px;font-weight:600}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line-2)}
+  th:first-child,td:first-child{text-align:left}
+  thead th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--line)}
+  .bars{margin-top:6px}
+  .bar-row{display:grid;grid-template-columns:56px 1fr 74px;align-items:center;gap:10px;margin:6px 0}
+  .bar-row .lab{font-size:12.5px;color:var(--muted)}
+  .bar-track{background:var(--line-2);border-radius:6px;height:16px;overflow:hidden}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--blue-2),var(--blue));border-radius:6px}
+  .bar-row .val{font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums}
+  .heat td{border:2px solid #fff;border-radius:6px;font-variant-numeric:tabular-nums;font-weight:600;color:#2a2f3a}
+  .heat th{font-weight:700;color:var(--muted)}
+  .heat .base{outline:2px solid #e07b1a;outline-offset:-2px}
+  .actions{display:flex;align-items:center;gap:14px;margin-top:18px;flex-wrap:wrap}
+  button{appearance:none;border:0;cursor:pointer;font:inherit;font-weight:600;background:var(--blue);color:#fff;padding:11px 20px;border-radius:10px;transition:background .15s,transform .05s}
+  button:hover{background:#17395a} button:active{transform:translateY(1px)} button:disabled{opacity:.6;cursor:default}
+  .status{font-size:13px;color:var(--muted)}
+  .badge{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:5px 11px;border-radius:999px}
+  .badge.ok{background:#e7f5ec;color:var(--green)} .badge.warn{background:#fdf0e6;color:#b5651d}
+  .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+  .note{margin-top:14px;font-size:12.5px;color:var(--muted);border-left:3px solid var(--line);padding-left:12px}
+  h2.section{font-size:15px;margin:0 0 12px;letter-spacing:-.01em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>LBO Calculator</h1>
+    <p>A live leveraged-buyout model. Returns update instantly as you change the
+       assumptions — and you can export the full 7-sheet workbook to Excel or
+       Microsoft 365 at any point.</p>
+  </header>
+
+  <div class="layout">
+    <!-- INPUTS -->
+    <div class="card" id="inputs">
+      <div class="gt">Transaction</div>
+      <div class="frow">
+        <div class="field"><label>Entry multiple (×)</label><input id="entryMultiple" type="number" step="0.5" value="10"></div>
+        <div class="field"><label>Exit multiple (×)</label><input id="exitMultiple" type="number" step="0.5" value="11"></div>
+        <div class="field"><label>Exit year (1–5)</label><input id="exitYear" type="number" step="1" min="1" max="5" value="5"></div>
+        <div class="field"><label>Exit fee (%)</label><input id="exitFee" type="number" step="0.25" value="1.5"></div>
+      </div>
+
+      <div class="gt">Operating — LTM ($M)</div>
+      <div class="frow">
+        <div class="field"><label>Revenue</label><input id="revenueLTM" type="number" step="10" value="400"></div>
+        <div class="field"><label>EBITDA</label><input id="ebitdaLTM" type="number" step="5" value="100"></div>
+        <div class="field"><label>D&amp;A</label><input id="daLTM" type="number" step="1" value="20"></div>
+        <div class="field"><label>CapEx</label><input id="capexLTM" type="number" step="1" value="16"></div>
+        <div class="field"><label>NWC change</label><input id="nwcLTM" type="number" step="1" value="8"></div>
+        <div class="field"><label>Tax rate (%)</label><input id="taxRate" type="number" step="0.5" value="25"></div>
+      </div>
+
+      <div class="gt">Growth &amp; margin</div>
+      <div class="frow">
+        <div class="field"><label>Revenue growth (%/yr)</label><input id="growth" type="number" step="0.5" value="5"></div>
+        <div class="field"><label>Margin exp. (%/yr)</label><input id="marginExp" type="number" step="0.1" value="0.5"></div>
+      </div>
+
+      <div class="gt">Leverage — % of entry EV</div>
+      <div class="frow">
+        <div class="field"><label>Term Loan B (%)</label><input id="tlbPct" type="number" step="1" value="35"></div>
+        <div class="field"><label>Senior Notes (%)</label><input id="ssnPct" type="number" step="1" value="20"></div>
+        <div class="field"><label>Mezzanine (%)</label><input id="mezPct" type="number" step="1" value="10"></div>
+        <div class="field"><label>TLB amort (%/yr)</label><input id="tlbAmrt" type="number" step="0.5" value="1"></div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div>
+      <div class="card">
+        <div class="metrics">
+          <div class="metric accent"><div class="k">IRR</div><div class="v" id="m-irr">—</div></div>
+          <div class="metric accent"><div class="k">MOIC</div><div class="v" id="m-moic">—</div></div>
+          <div class="metric"><div class="k">Entry equity</div><div class="v" id="m-entry">—</div></div>
+          <div class="metric"><div class="k">Exit equity</div><div class="v" id="m-exit">—</div></div>
+        </div>
+        <div class="sub">
+          <div><div class="k">Entry EV</div><div class="v" id="s-ev">—</div></div>
+          <div><div class="k">Leverage</div><div class="v" id="s-lev">—</div></div>
+          <div><div class="k">Equity / EV</div><div class="v" id="s-eqpct">—</div></div>
+          <div><div class="k">Exit EV</div><div class="v" id="s-exitev">—</div></div>
+        </div>
+        <div class="actions">
+          <button id="download">Export to Excel</button>
+          <span class="status" id="status"></span>
+          <span id="balance"></span>
+        </div>
+        <div class="note" id="balnote" style="display:none"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="section">Projection &amp; deleveraging</h2>
+        <table>
+          <thead><tr><th>Year</th><th>Revenue</th><th>EBITDA</th><th>Cash int.</th><th>FCF</th><th>Debt (end)</th></tr></thead>
+          <tbody id="proj"></tbody>
+        </table>
+        <div class="bars" id="bars"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="section">IRR sensitivity — entry ↓ vs exit → multiple</h2>
+        <table class="heat"><thead id="heat-head"></thead><tbody id="heat-body"></tbody></table>
+        <div class="note">Debt &amp; operations held at the base case; only entry/exit multiples vary. The outlined cell tracks your current multiples.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="calc.js"></script>
+<script src="dist/exceljs.min.js"></script>
+<script src="dist/lbo-model.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const num = (id) => parseFloat($(id).value);
+  const pct = (id) => num(id) / 100;
+  const fmt$ = (x) => (x==null||isNaN(x)) ? "—" : x.toLocaleString("en-US",{minimumFractionDigits:1,maximumFractionDigits:1});
+  const fmtPct = (x) => (x==null||isNaN(x)) ? "—" : (x*100).toFixed(1)+"%";
+  const fmtX = (x) => (x==null||isNaN(x)) ? "—" : x.toFixed(2)+"×";
+
+  function readInputs(){
+    return {
+      entryMultiple:num("entryMultiple"), exitMultiple:num("exitMultiple"),
+      exitYear:num("exitYear"), exitFee:pct("exitFee"),
+      revenueLTM:num("revenueLTM"), ebitdaLTM:num("ebitdaLTM"), daLTM:num("daLTM"),
+      capexLTM:num("capexLTM"), nwcLTM:num("nwcLTM"), taxRate:pct("taxRate"),
+      growth:pct("growth"), marginExp:pct("marginExp"),
+      tlbPct:pct("tlbPct"), ssnPct:pct("ssnPct"), mezPct:pct("mezPct"), tlbAmrt:pct("tlbAmrt"),
+    };
+  }
+
+  // red → amber → green background for a normalized value t in [0,1]
+  function heatColor(t){
+    const hue = Math.max(0, Math.min(1, t)) * 130;   // 0=red, 130=green
+    return `hsl(${hue}, 62%, 90%)`;
+  }
+
+  function render(){
+    const inputs = readInputs();
+    const r = window.LBOCalc.computeLBO(inputs);
+    const R = r.returns, T = r.transaction, Y = r.years;
+
+    $("m-irr").textContent  = fmtPct(R.irr);
+    $("m-moic").textContent = fmtX(R.moic);
+    $("m-entry").textContent= fmt$(R.entryEquity);
+    $("m-exit").textContent = fmt$(R.exitEquity);
+    $("s-ev").textContent   = fmt$(T.ev);
+    $("s-lev").textContent  = T.leverage.toFixed(1)+"×";
+    $("s-eqpct").textContent= fmtPct(T.equityPct);
+    $("s-exitev").textContent = fmt$(R.exitEV);
+
+    // projection table
+    let rows = "";
+    for(let t=1;t<=5;t++){
+      rows += `<tr><td>Year ${t}</td><td>${fmt$(Y.rev[t])}</td><td>${fmt$(Y.ebitda[t])}</td>`+
+              `<td>${fmt$(Y.totCashInt[t])}</td><td>${fmt$(Y.ofcf[t])}</td><td>${fmt$(Y.totDebtEnd[t])}</td></tr>`;
+    }
+    $("proj").innerHTML = rows;
+
+    // debt bars (year 0..5)
+    const maxDebt = Math.max(...Y.totDebtEnd);
+    let bars="";
+    for(let t=0;t<=5;t++){
+      const w = maxDebt>0 ? (Y.totDebtEnd[t]/maxDebt*100) : 0;
+      bars += `<div class="bar-row"><span class="lab">${t===0?"Close":"Year "+t}</span>`+
+              `<span class="bar-track"><span class="bar-fill" style="width:${w}%"></span></span>`+
+              `<span class="val">${fmt$(Y.totDebtEnd[t])}</span></div>`;
+    }
+    $("bars").innerHTML = bars;
+
+    // sensitivity heatmap
+    const S = r.sensitivity;
+    let flat=[]; S.irrTable.forEach(row=>row.forEach(v=>flat.push(v)));
+    const lo=Math.min(...flat), hi=Math.max(...flat), span=(hi-lo)||1;
+    let head = "<tr><th>Entry ↓ / Exit →</th>";
+    S.exitMults.forEach(x=> head += `<th>${x}×</th>`);
+    head += "</tr>";
+    $("heat-head").innerHTML = head;
+    const eRound = Math.round(inputs.entryMultiple), xRound = Math.round(inputs.exitMultiple);
+    let body="";
+    S.entryMults.forEach((em,i)=>{
+      body += `<tr><th>${em}×</th>`;
+      S.exitMults.forEach((xm,j)=>{
+        const v = S.irrTable[i][j];
+        const bg = heatColor((v-lo)/span);
+        const isBase = (em===eRound && xm===xRound);
+        body += `<td class="${isBase?"base":""}" style="background:${bg}">${(v*100).toFixed(1)}%</td>`;
+      });
+      body += "</tr>";
+    });
+    $("heat-body").innerHTML = body;
+
+    // balance-sheet check badge (honest)
+    const b = $("balance"), note = $("balnote");
+    if(r.bsBalanced){
+      b.innerHTML = `<span class="badge ok"><span class="dot"></span>Balance sheet reconciles</span>`;
+      note.style.display="none";
+    } else {
+      const worst = Math.max(...r.bsCheck.map(Math.abs));
+      b.innerHTML = `<span class="badge warn"><span class="dot"></span>Balance check off by ${worst.toFixed(1)}</span>`;
+      note.style.display="block";
+      note.textContent = "Note: operating cash flow doesn't cover mandatory debt amortisation this year (a severe-distress scenario the simplified model doesn't fully capture). Lower leverage or raise EBITDA to reconcile.";
+    }
+  }
+
+  // live recompute
+  document.querySelectorAll("#inputs input").forEach(el => el.addEventListener("input", render));
+
+  // export to excel (reuses the ExcelJS bundle)
+  $("download").addEventListener("click", async () => {
+    const btn = $("download"); btn.disabled = true;
+    $("status").textContent = "Building workbook…";
+    try{
+      await window.LBOModel.downloadModel(readInputs(), "lbo_model.xlsx");
+      $("status").textContent = "Downloaded ✓";
+    }catch(err){ console.error(err); $("status").textContent = "Error: "+err.message; }
+    finally{ btn.disabled = false; }
+  });
+
+  render(); // initial
+</script>
+</body>
+</html>

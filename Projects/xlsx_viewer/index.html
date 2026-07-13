@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Excel Model Viewer</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/css/pluginsCss.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/plugins.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/css/luckysheet.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/assets/iconfont/iconfont.css" />
+
+<style>
+  html, body { margin:0; height:100%; font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  #topbar {
+    height:52px; display:flex; align-items:center; gap:14px;
+    padding:0 16px; background:#1F4E79; color:#fff; box-sizing:border-box;
+  }
+  #topbar select {
+    font:inherit; padding:6px 10px; border-radius:6px; border:0;
+    background:#fff; color:#141925; cursor:pointer;
+  }
+  #topbar .status { font-size:12.5px; color:#cfe0f0; }
+  #topbar a.dl {
+    margin-left:auto; color:#fff; text-decoration:none; font-size:13px;
+    display:flex; align-items:center; gap:6px; opacity:.9;
+  }
+  #topbar a.dl:hover { opacity:1; text-decoration:underline; }
+  #luckysheet { position:absolute; top:52px; bottom:0; left:0; right:0; }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <select id="modelSelect"></select>
+  <span class="status" id="status">Loading…</span>
+  <a class="dl" id="downloadLink" download>Download original file ⤓</a>
+</div>
+<div id="luckysheet"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/plugins/js/plugin.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luckysheet@2.1.13/dist/luckysheet.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luckyexcel@1.0.1/dist/luckyexcel.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hyperformula@3.3.0/dist/hyperformula.full.min.js"></script>
+
+<script>
+  // ── Workbooks available in this viewer ──
+  const MODELS = [
+    { name: "LBO Model",             file: "LBO Model.xlsx" },
+    { name: "3-Statement Model",     file: "Filippo Leonardi - Financial Model (2).xlsx" },
+    { name: "Burger King Model",     file: "Burger King model.xlsx" },
+  ];
+
+  const $select = document.getElementById('modelSelect');
+  const $status = document.getElementById('status');
+  const $dl     = document.getElementById('downloadLink');
+
+  // Luckysheet's own formula engine has real correctness bugs recomputing
+  // formulas that switch between text and numeric results across edits
+  // (a pattern this model relies on for its Case/PIK scenario toggles), and
+  // fighting it after the fact (re-writing values once it's already
+  // miscalculated something) is a losing, timing-dependent race. Instead,
+  // HyperFormula computes every formula cell's value on the LBO sheet
+  // *before* Luckysheet is ever created, and those formulas are stripped
+  // out of the data handed to Luckysheet entirely -- Luckysheet only ever
+  // sees plain, already-correct numbers/text for these cells, so it has
+  // nothing of its own left to (mis)calculate. Luckysheet stays purely a
+  // display/editing surface; whenever any input on the sheet changes,
+  // HyperFormula recomputes and the corrected values are pushed into the
+  // grid the same way.
+  //
+  // The LBO sheet also has a genuine revolver/interest circularity (the
+  // classic "interest expense -> net income -> cash flow -> debt paydown ->
+  // average balance -> interest expense" loop), which HyperFormula can't
+  // resolve on its own -- it has no iterative solver and returns #CYCLE!
+  // for the whole loop. Excel resolves the same loop with "enable iterative
+  // calculation" (repeatedly recompute until the values stop moving), so
+  // that's what's reimplemented here: findCircularCells/findSelfReferencing
+  // identify exactly which cells are part of the loop (a straight port of
+  // the server's Tarjan SCC detector in app.py, run here against the live,
+  // unfrozen formulas), and reconverge() Gauss-Seidel-iterates just those
+  // cells -- one cell's formula evaluated at a time against the rest of the
+  // grid's current values, its result frozen back to a plain number before
+  // moving to the next -- until the whole loop stops moving (or 100
+  // iterations, same default cap Excel itself uses).
+  let hfEngine = null;
+
+  const CONVERGENCE_TOLERANCE = 0.001; // matches Excel's default iterative-calc "Maximum Change"
+  const MAX_ITERATIONS = 100;          // matches Excel's default iterative-calc "Maximum Iterations"
+
+  // LuckyExcel exports every cached formula/value as a *string* (even for
+  // purely numeric cells, e.g. cell.v.v === "91.470378000075002"), not a
+  // JS number. Treating those as non-numeric was the actual cause of the
+  // iterative solver collapsing every circular cell to 0: its seed lookup
+  // only accepted typeof === 'number' and silently found nothing.
+  function toNumberIfNumeric(v) {
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string' && v.trim() !== '' && !isNaN(Number(v))) return Number(v);
+    return null;
+  }
+
+  // The source workbooks mix fonts (a handful of title cells use Times New
+  // Roman instead of the model's usual Calibri) and alignments (year-header
+  // rows like "2008A 2009A ..." are numeric cells -- Excel auto-right-aligns
+  // numbers, but these have an explicit left/center override in the file,
+  // so they visually don't line up with the plain numbers below them). Force
+  // every cell to Calibri and every genuinely numeric cell's value to
+  // right-aligned so the whole sheet reads consistently, regardless of what
+  // the original file's per-cell style happened to set.
+  function normalizeCellFormatting(exportJson) {
+    exportJson.sheets.forEach(sheet => {
+      sheet.celldata.forEach(cell => {
+        const v = cell.v;
+        if (!v) return;
+        v.ff = 'Calibri';
+        if (toNumberIfNumeric(v.v) !== null) v.ht = '2';
+        // Formulas like IF(CASE=2,"--",G61-G67) return text in one branch and
+        // a number in the other -- Excel just tags the cell with whichever
+        // type it last held ("str" here, since it was showing "--" when the
+        // file was saved), while keeping the cell's real number format code
+        // (e.g. "#,##0 ;(#,##0)") in ct.fa regardless. Luckysheet takes that
+        // t="str" tag as "this cell is permanently text" and silently
+        // replaces ct.fa with "General" at load time -- so once the
+        // Circuit breaker/Case/PIK toggles (or the solver, on later
+        // recomputes) turn the value into a real number, it renders with
+        // Luckysheet's default General formatting (raw, unrounded decimals)
+        // instead of the accounting format's 0-decimal rounding. Dropping
+        // the stale "str" tag before Luckysheet ever sees the cell keeps its
+        // real number format intact, so numeric results round the same way
+        // Excel itself would show them.
+        if (v.ct && v.ct.t === 'str') delete v.ct.t;
+      });
+    });
+  }
+
+  function colNumToLetters(c) {
+    let s = '', n = c + 1;
+    while (n > 0) {
+      const rem = (n - 1) % 26;
+      s = String.fromCharCode(65 + rem) + s;
+      n = Math.floor((n - 1) / 26);
+    }
+    return s;
+  }
+
+  const REF_TOKEN_RE = /\$?([A-Z]{1,3})\$?([0-9]+)/g;
+
+  // Tarjan's SCC over the formula dependency graph -- same algorithm as
+  // app.py's _find_circular_cells, kept in sync deliberately: this one runs
+  // against the live formulas the viewer actually has, the Python one
+  // decides (for every sheet except this one) what to freeze server-side.
+  function findCircularCells(formulas) {
+    const graph = new Map();
+    for (const [addr, f] of formulas) {
+      const refs = new Set();
+      let m;
+      REF_TOKEN_RE.lastIndex = 0;
+      while ((m = REF_TOKEN_RE.exec(f))) {
+        const ref = m[1] + m[2];
+        if (ref !== addr) refs.add(ref);
+      }
+      graph.set(addr, refs);
+    }
+    let counter = 0;
+    const stack = [], index = new Map(), lowlink = new Map(), onStack = new Map();
+    const circular = new Set();
+    function strongconnect(node) {
+      index.set(node, counter); lowlink.set(node, counter); counter++;
+      stack.push(node); onStack.set(node, true);
+      for (const succ of graph.get(node) || []) {
+        if (!formulas.has(succ)) continue;
+        if (!index.has(succ)) {
+          strongconnect(succ);
+          lowlink.set(node, Math.min(lowlink.get(node), lowlink.get(succ)));
+        } else if (onStack.get(succ)) {
+          lowlink.set(node, Math.min(lowlink.get(node), index.get(succ)));
+        }
+      }
+      if (lowlink.get(node) === index.get(node)) {
+        const scc = [];
+        let w;
+        do { w = stack.pop(); onStack.set(w, false); scc.push(w); } while (w !== node);
+        if (scc.length > 1) scc.forEach(x => circular.add(x));
+      }
+    }
+    for (const node of formulas.keys()) if (!index.has(node)) strongconnect(node);
+    return circular;
+  }
+
+  // "Hold at current value" plugs: IF(condition, liveFormula, ownCellAddress).
+  // A length-1 cycle Tarjan's algorithm doesn't catch (it discards
+  // self-edges), so it's detected separately -- same split as app.py's
+  // _freeze_self_referencing_formulas vs _freeze_circular_cells.
+  function findSelfReferencing(formulas) {
+    const out = new Set();
+    for (const [addr, f] of formulas) {
+      if (new RegExp('(?<![A-Za-z0-9_])' + addr + '(?![A-Za-z0-9_])').test(f)) out.add(addr);
+    }
+    return out;
+  }
+
+  // Gauss-Seidel sweep: evaluate one iterative cell's real formula against
+  // the rest of the grid's current values, freeze the result back to a
+  // plain number, then move to the next cell. Installing more than one of
+  // these formulas at a time (even inside a single hf.batch()) makes them
+  // reference *each other* as live formulas again -- HyperFormula then
+  // correctly reports a real #CYCLE! for the group, and every read silently
+  // falls back to the previous value, so nothing ever converges. Keeping
+  // at most one of these cells "live" at any instant is what avoids that:
+  // to every other formula on the sheet, the rest of the loop is always
+  // just plain numbers, so HyperFormula never sees an actual cycle.
+  function reconverge(engine) {
+    if (!engine.iterativeCells.length) return;
+    let prev = engine.iterativeCells.map(({ r, c }) => {
+      const v = engine.hf.getCellValue({ sheet: engine.sheetId, row: r, col: c });
+      return typeof v === 'number' ? v : 0;
+    });
+    for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
+      let maxChange = 0;
+      const next = [];
+      engine.iterativeCells.forEach(({ r, c, formula }, i) => {
+        engine.hf.setCellContents({ sheet: engine.sheetId, row: r, col: c }, [[formula]]);
+        const raw = engine.hf.getCellValue({ sheet: engine.sheetId, row: r, col: c });
+        const val = typeof raw === 'number' ? raw : prev[i];
+        engine.hf.setCellContents({ sheet: engine.sheetId, row: r, col: c }, [[val]]);
+        next.push(val);
+        maxChange = Math.max(maxChange, Math.abs(val - prev[i]));
+      });
+      prev = next;
+      if (maxChange < CONVERGENCE_TOLERANCE) break;
+    }
+  }
+
+  function buildHFEngine(exportJson, lboIdx) {
+    const hfSheets = {};
+    exportJson.sheets.forEach(sheet => {
+      const grid = [];
+      sheet.celldata.forEach(cell => {
+        if (!grid[cell.r]) grid[cell.r] = [];
+        const v = cell.v;
+        if (!v) { grid[cell.r][cell.c] = null; return; }
+        if (v.f) {
+          grid[cell.r][cell.c] = v.f.startsWith('=') ? v.f : ('=' + v.f);
+        } else if (typeof v.v === 'string' && v.v.startsWith('=')) {
+          grid[cell.r][cell.c] = null;
+        } else if (toNumberIfNumeric(v.v) !== null) {
+          grid[cell.r][cell.c] = toNumberIfNumeric(v.v);
+        } else if (typeof v.v === 'string') {
+          grid[cell.r][cell.c] = v.v;
+        } else {
+          // Plain annotation text that happens to start with "=" (e.g. margin
+          // notes like "= EBIT / Revenue") -- not a formula, and HyperFormula
+          // would otherwise misparse it as one. Safe to drop: nothing in the
+          // model calculates from these note cells.
+          grid[cell.r][cell.c] = null;
+        }
+      });
+      const maxCol = grid.reduce((mx, row) => row ? Math.max(mx, row.length) : mx, 0);
+      for (let r = 0; r < grid.length; r++) {
+        if (!grid[r]) grid[r] = [];
+        for (let c = 0; c < maxCol; c++) if (grid[r][c] === undefined) grid[r][c] = null;
+      }
+      hfSheets[sheet.name] = grid;
+    });
+
+    // Find the LBO sheet's circular/self-referencing cells from its live
+    // formula text, and seed each one at the file's cached (Excel-converged)
+    // value -- exactly the guess Excel itself last converged to -- so the
+    // grid HyperFormula builds from is a normal acyclic DAG (no #CYCLE!) and
+    // every non-iterative formula is already correct before reconverge() ever
+    // runs its first sweep.
+    const formulaText = new Map();
+    const cachedValue = new Map();
+    const addrToRC = new Map();
+    exportJson.sheets[lboIdx].celldata.forEach(cell => {
+      if (!cell.v) return;
+      const addr = colNumToLetters(cell.c) + (cell.r + 1);
+      addrToRC.set(addr, { r: cell.r, c: cell.c });
+      if (cell.v.f) formulaText.set(addr, cell.v.f.startsWith('=') ? cell.v.f.slice(1) : cell.v.f);
+      const numeric = toNumberIfNumeric(cell.v.v);
+      if (numeric !== null) cachedValue.set(addr, numeric);
+    });
+
+    const iterativeAddrs = new Set([...findCircularCells(formulaText), ...findSelfReferencing(formulaText)]);
+    const iterativeCells = [...iterativeAddrs].map(addr => ({
+      ...addrToRC.get(addr),
+      formula: '=' + formulaText.get(addr),
+    }));
+
+    const lboGrid = hfSheets[exportJson.sheets[lboIdx].name];
+    iterativeCells.forEach(({ r, c }) => {
+      const addr = colNumToLetters(c) + (r + 1);
+      lboGrid[r][c] = cachedValue.has(addr) ? cachedValue.get(addr) : 0;
+    });
+
+    const hf = HyperFormula.buildFromSheets(hfSheets, { licenseKey: 'gpl-v3' });
+    const lboSheetId = hf.getSheetId(exportJson.sheets[lboIdx].name);
+
+    const formulaCells = [];
+    // Formulas like IF(CASE=2,"--",G61-G67) return text in one branch and a
+    // number in the other. Excel tags the cell with whichever type it last
+    // held (t="str" here, since it was showing "--" when the file was
+    // saved) while keeping its real number format code (e.g.
+    // "#,##0 ;(#,##0)") in ct.fa regardless. Luckysheet reads that stale
+    // "str" tag as "this cell is permanently text" and silently replaces
+    // ct.fa with "General" the moment it renders a text value -- so once a
+    // toggle turns the value into a real number, it displays with
+    // Luckysheet's default General formatting (raw, unrounded decimals)
+    // instead of the accounting format's 0-decimal rounding. Remembering
+    // each such cell's real format code here lets syncFromHF reassert it
+    // after every recompute.
+    const dualTypeFormatByAddr = new Map();
+    exportJson.sheets[lboIdx].celldata.forEach(cell => {
+      if (cell.v && cell.v.f) formulaCells.push({ r: cell.r, c: cell.c });
+      if (cell.v && cell.v.ct && cell.v.ct.t === 'str' && cell.v.ct.fa) {
+        dualTypeFormatByAddr.set(cell.r + ',' + cell.c, cell.v.ct.fa);
+      }
+    });
+
+    const engine = { hf, sheetId: lboSheetId, sheetOrder: lboIdx, formulaCells, iterativeCells, dualTypeFormatByAddr, applying: false };
+    reconverge(engine);
+    return engine;
+  }
+
+  // Overwrite every formula cell's value/formula in the raw exportJson (in
+  // place, before Luckysheet ever sees it) with HyperFormula's computed
+  // result, then delete the formula itself so Luckysheet treats the cell as
+  // a plain literal and never tries to recalculate it on its own.
+  function bakeHFValuesIntoExportJson(engine, exportJson, lboIdx) {
+    const celldata = exportJson.sheets[lboIdx].celldata;
+    engine.formulaCells.forEach(({ r, c }) => {
+      const cell = celldata.find(x => x.r === r && x.c === c);
+      if (!cell || !cell.v) return;
+      const val = engine.hf.getCellValue({ sheet: engine.sheetId, row: r, col: c });
+      if (val && typeof val === 'object') return; // HyperFormula error -- leave the original cached value alone
+      cell.v.v = val;
+      delete cell.v.m;
+      delete cell.v.f;
+    });
+  }
+
+  function syncFromHF(engine) {
+    engine.applying = true;
+    engine.formulaCells.forEach(({ r, c }) => {
+      const val = engine.hf.getCellValue({ sheet: engine.sheetId, row: r, col: c });
+      if (val && typeof val === 'object') return; // HyperFormula error object -- leave display as-is
+      // Reassert the real number format on this cell *before* pushing its
+      // value if it's one of the text/number "dual type" cells -- see the
+      // comment on dualTypeFormats -- and this recompute landed on a real
+      // number (as opposed to still being "--" or similar). Luckysheet
+      // computes each cell's cached display string (v.m) from its format at
+      // the moment setCellValue runs, so the format has to already be
+      // correct going in; fixing it afterwards leaves the stale, unrounded
+      // display string in place. The format actually used for display lives
+      // at v.ct.fa, not the top-level v.fa that attr:'fa' would set, so this
+      // has to go through attr:'ct' with the full {fa, t} pair Luckysheet
+      // requires for that attr. Cells still holding text at this recompute
+      // are left alone -- Luckysheet already renders those correctly on its
+      // own, and forcing t:'n' onto a non-numeric value risks garbling it.
+      const dualFormat = typeof val === 'number' ? engine.dualTypeFormatByAddr.get(r + ',' + c) : undefined;
+      if (dualFormat) {
+        luckysheet.setCellFormat(r, c, 'ct', { fa: dualFormat, t: 'n' }, { order: engine.sheetOrder });
+      }
+      luckysheet.setCellValue(r, c, val, { order: engine.sheetOrder });
+    });
+    // Luckysheet fires its cellUpdated hook via setTimeout(fn, 0) per cell --
+    // deferred to *after* this synchronous loop returns -- so resetting
+    // `applying` here would already be too late to guard against our own
+    // ~800 writes: every one of those deferred hook calls would see
+    // `applying === false` again by the time it actually runs, and the
+    // broadened "any LBO input edit" trigger would treat each as a fresh
+    // user edit, re-triggering reconverge()+syncFromHF() and cascading into
+    // an ever-growing storm of recomputation. Deferring the reset the same
+    // way -- another setTimeout(fn, 0), queued only after every one of this
+    // loop's per-cell setTimeouts is already queued -- keeps `applying` true
+    // for the entire time those callbacks fire, so the hook's own guard
+    // actually suppresses them.
+    setTimeout(() => { engine.applying = false; }, 0);
+  }
+
+  MODELS.forEach((m, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = m.name;
+    $select.appendChild(opt);
+  });
+
+  function loadModel(index) {
+    const m = MODELS[index];
+    const baseName = m.file;
+    const downloadUrl = '../course_models/' + encodeURIComponent(m.file);
+    const renderUrl   = '../course_models/_render_cache/' + encodeURIComponent(m.file);
+
+    $status.textContent = 'Loading ' + m.name + '…';
+    $dl.href = downloadUrl;
+    $dl.setAttribute('download', baseName);
+
+    if (window.luckysheet && luckysheet.destroy) {
+      try { luckysheet.destroy(); } catch (e) {}
+    }
+    document.getElementById('luckysheet').innerHTML = '';
+
+    fetch(renderUrl, { method: 'HEAD' }).then(res => {
+      if (!res.ok) throw new Error('not found');
+      loadIntoLuckysheet();
+    }).catch(() => {
+      $status.textContent = '"' + baseName + '" was not found. Add it to Projects/course_models/.';
+    });
+
+    function loadIntoLuckysheet() {
+    LuckyExcel.transformExcelToLuckyByUrl(renderUrl, m.name, (exportJson) => {
+      if (!exportJson || !exportJson.sheets || exportJson.sheets.length === 0) {
+        $status.textContent = 'Could not read "' + baseName + '". Make sure the file is a valid .xlsx.';
+        return;
+      }
+      exportJson.sheets.forEach(sheet => { sheet.zoomRatio = 0.9; });
+
+      // Default to the "LBO" tab (rather than whichever tab was left open
+      // when the workbook was last saved) so scenario toggle cells like
+      // Circuit breaker/Case/PIK are visible right away.
+      const lboIdx = exportJson.sheets.findIndex(s => /^lbo$/i.test(s.name));
+      if (lboIdx !== -1) {
+        exportJson.sheets.forEach((s, i) => { s.status = (i === lboIdx) ? 1 : 0; });
+      }
+
+      const isBurgerKing = /burger king/i.test(m.name);
+      hfEngine = null;
+
+      // HyperFormula computes every formula cell's value on the LBO sheet
+      // and those formulas get baked into plain literals *before*
+      // Luckysheet is created, so Luckysheet never has a formula of its own
+      // to (mis)calculate for these cells -- see the comment on hfEngine.
+      // This has to run before normalizeCellFormatting, which strips the
+      // text/number "dual type" tag buildHFEngine still needs to read off
+      // the raw, unmodified cell data.
+      if (isBurgerKing && lboIdx !== -1) {
+        hfEngine = buildHFEngine(exportJson, lboIdx);
+        bakeHFValuesIntoExportJson(hfEngine, exportJson, lboIdx);
+      }
+
+      normalizeCellFormatting(exportJson);
+
+      luckysheet.create({
+        container: 'luckysheet',
+        showtoolbar: true,
+        showinfobar: false,
+        showsheetbar: true,
+        showstatisticBar: true,
+        enableAddRow: false,
+        enableAddBackTop: false,
+        allowEdit: true,
+        lang: 'en',
+        data: exportJson.sheets,
+        title: exportJson.info ? exportJson.info.name : m.name,
+        hook: {
+          cellUpdated: function (r, c, oldValue, newValue) {
+            if (!hfEngine || hfEngine.applying) return;
+            // Only react to edits on the LBO sheet itself -- the hook fires
+            // for edits on whichever sheet is currently active, and its (r,c)
+            // is relative to that sheet, so a Shares-sheet edit could
+            // otherwise collide with an LBO cell address by coincidence.
+            if (String(luckysheet.getSheet().order) !== String(hfEngine.sheetOrder)) return;
+            const raw = newValue && typeof newValue === 'object' ? newValue.v : newValue;
+            hfEngine.hf.setCellContents({ sheet: hfEngine.sheetId, row: r, col: c }, [[raw]]);
+            reconverge(hfEngine);
+            syncFromHF(hfEngine);
+          },
+        },
+      });
+      installScrollDamper();
+      $status.textContent = '';
+
+      // LuckyExcel doesn't carry over Excel's native data-validation dropdowns,
+      // so the Burger King model's scenario toggles (Circuit breaker/Case/PIK
+      // at E6/E7/E8 on the LBO sheet) are re-added here so they're actually
+      // clickable in the viewer.
+      if (isBurgerKing) {
+        setTimeout(() => {
+          luckysheet.setDataVerification({ type: 'dropdown', value1: 'ON,OFF' }, { range: 'E6' });
+          luckysheet.setDataVerification({ type: 'dropdown', value1: '1,2' }, { range: 'E7' });
+          luckysheet.setDataVerification({ type: 'dropdown', value1: '1,2' }, { range: 'E8' });
+        }, 400);
+      }
+    }, (err) => {
+      $status.textContent = 'Error loading "' + baseName + '": ' + err;
+    });
+    }
+  }
+
+  $select.addEventListener('change', (e) => loadModel(+e.target.value));
+
+  // Luckysheet's own scroll-per-wheel-tick step is fixed and feels too
+  // fast/jumpy on trackpads. Damp the wheel delta it sees before its
+  // internal handler reads it, so each movement scrolls fewer rows.
+  const SCROLL_DAMPING = 0.35;
+  let scrollDamperInstalled = false;
+  function installScrollDamper() {
+    if (scrollDamperInstalled) return;
+    const grid = document.getElementById('luckysheet-grid-window-1');
+    if (!grid) { setTimeout(installScrollDamper, 200); return; }
+    grid.addEventListener('wheel', (e) => {
+      try {
+        Object.defineProperty(e, 'deltaY', { value: e.deltaY * SCROLL_DAMPING, configurable: true });
+        Object.defineProperty(e, 'deltaX', { value: e.deltaX * SCROLL_DAMPING, configurable: true });
+      } catch (err) { /* property not overridable in this browser, ignore */ }
+    }, { capture: true, passive: true });
+    scrollDamperInstalled = true;
+  }
+
+  loadModel(0);
+</script>
+</body>
+</html>

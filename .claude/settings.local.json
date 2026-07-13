@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find Static/images -type d -iname \"*SAE*\" -o -type d -iname \"*Formula*\")",
+      "Bash(find Static/images -iname \"IMG_4771*\")",
+      "Bash(sips -g pixelWidth -g pixelHeight \"Static/images/Robotics/Robo_logo.jpg\")",
+      "Bash(lsof -ti:5000)",
+      "Bash(xargs -I{} ps -p {} -o comm=)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5000/)",
+      "Bash(node --check Static/js/main.js)",
+      "Bash(./venv/bin/python -c ' *)",
+      "Bash(rm -f scratch_tmp/c.png)",
+      "Bash(sips -c 1 1 --cropOffset 40 5 \"Static/images/Robotics/Robo_logo.jpg\" --out scratch_tmp/c.png)",
+      "Bash(python3 -)",
+      "Bash(sips -g pixelWidth -g pixelHeight scratch_tmp/c.png)",
+      "Bash(which ffmpeg *)",
+      "Bash(./venv/bin/python -c \"import PIL; print\\('venv PIL ok'\\)\")",
+      "Bash(./.venv/bin/python -c \"import PIL; print\\('.venv PIL ok'\\)\")",
+      "Bash(rm -rf scratch_tmp)",
+      "Bash(sips -g pixelWidth -g pixelHeight \"Static/images/Machine Shop/IMG_4553.jpeg\")",
+      "Bash(ipconfig getifaddr *)",
+      "Bash(./venv/bin/python --version)",
+      "Bash(grep -iE \"procfile|render|gitignore|runtime|python-version|\\\\.git$\")",
+      "Bash(./venv/bin/pip install *)",
+      "Bash(./venv/bin/python -c \"from app import app; print\\('WSGI callable OK:', app\\)\")"
+    ]
+  }
+}

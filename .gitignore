@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# OS files
+.DS_Store
+**/.DS_Store
+
+# Render/build cache written at runtime
+Projects/course_models/_render_cache/

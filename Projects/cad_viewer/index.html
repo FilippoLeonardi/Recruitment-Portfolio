@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>3D Model Viewer</title>
+<style>
+  html, body { margin:0; height:100%; overflow:hidden; background:#1b1e24;
+    font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  #topbar {
+    position:absolute; top:0; left:0; right:0; height:48px; z-index:10;
+    display:flex; align-items:center; gap:14px; padding:0 16px;
+    background:rgba(20,22,28,.55); backdrop-filter:blur(8px); color:#fff; box-sizing:border-box;
+  }
+  #topbar .title { font-weight:600; }
+  #topbar .status { font-size:12.5px; color:#b7c0cc; display:flex; align-items:center; gap:8px; }
+  .spinner-sm {
+    width:13px; height:13px; border-radius:50%; flex:none;
+    border:2px solid rgba(255,255,255,.2); border-top-color:#4f8ef7;
+    animation:spin 0.8s linear infinite;
+  }
+  #topbar .hint { margin-left:auto; font-size:12px; color:#8b93a1; }
+  #viewport { position:absolute; inset:0; }
+  #overlayMsg {
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color:#cfd4dc; text-align:center; padding:40px; box-sizing:border-box; flex-direction:column; gap:10px;
+  }
+  #overlayMsg code { background:#2a2e37; padding:2px 6px; border-radius:4px; }
+  .spinner {
+    width:34px; height:34px; border-radius:50%;
+    border:3px solid rgba(255,255,255,.15); border-top-color:#4f8ef7;
+    animation:spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  #loadingOverlay {
+    position:absolute; inset:0; z-index:5; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:16px; color:#cfd4dc; text-align:center; padding:40px; box-sizing:border-box;
+  }
+  #loadingOverlay .loading-text { font-size:14px; }
+  #loadingOverlay .loading-sub { font-size:12.5px; color:#8b93a1; max-width:380px; }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="title">Embedded Systems Robotics Project</span>
+  <span class="status" id="status">Loading…</span>
+  <span class="hint">Drag to rotate · scroll to zoom · right-drag to pan</span>
+</div>
+<div id="viewport"></div>
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">Loading…</div>
+  <div class="loading-sub">Large CAD assemblies can take up to 30 seconds to load — the model is being converted to 3D in your browser.</div>
+</div>
+<div id="overlayMsg" style="display:none"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/occt-import-js.js"></script>
+
+<script type="module">
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+  import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+  import { ThreeMFLoader } from 'three/addons/loaders/3MFLoader.js';
+  import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+  const $status = document.getElementById('status');
+  const $overlay = document.getElementById('overlayMsg');
+  const $viewport = document.getElementById('viewport');
+
+  // First candidate found (checked in order) is loaded. Export the assembly
+  // from SolidWorks as any of these and drop it in the CAD folder below —
+  // no code changes needed. GLB/glTF and 3MF preserve per-part colors; STL
+  // is geometry-only (single material) but works everywhere.
+  const MODEL_DIR = '../TEAM5_FINALCAD copy/';
+  const CANDIDATES = [
+    { file: 'FULLASSEMBLY.glb',  type: 'gltf' },
+    { file: 'FULLASSEMBLY.gltf', type: 'gltf' },
+    { file: 'FULLASSEMBLY.3mf',  type: '3mf'  },
+    { file: 'FULLASSEMBLY.stl',  type: 'stl'  },
+    { file: 'FULLASSEMBLY.step', type: 'step' },
+    { file: 'FULLASSEMBLY.stp',  type: 'step' },
+  ];
+
+
+  const $loadingOverlay = document.getElementById('loadingOverlay');
+  const $loadingText = document.getElementById('loadingText');
+
+  function setStatus(text) {
+    if (!text) {
+      $status.innerHTML = '';
+      $loadingOverlay.style.display = 'none';
+      return;
+    }
+    $status.innerHTML = '<span class="spinner-sm"></span><span>' + text + '</span>';
+    $loadingText.textContent = text;
+    $loadingOverlay.style.display = 'flex';
+  }
+
+  function showOverlay(html) {
+    $loadingOverlay.style.display = 'none';
+    $overlay.innerHTML = html;
+    $overlay.style.display = 'flex';
+  }
+
+  async function findModel() {
+    for (const c of CANDIDATES) {
+      const url = MODEL_DIR + encodeURIComponent(c.file);
+      try {
+        const res = await fetch(url, { method: 'HEAD' });
+        if (res.ok) return { url, ...c };
+      } catch (e) { /* try next candidate */ }
+    }
+    return null;
+  }
+
+  let scene, camera, renderer, controls;
+
+  function initScene() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1b1e24);
+
+    camera = new THREE.PerspectiveCamera(45, $viewport.clientWidth / $viewport.clientHeight, 0.1, 100000);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize($viewport.clientWidth, $viewport.clientHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    $viewport.appendChild(renderer.domElement);
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x30323a, 1.1));
+    const key = new THREE.DirectionalLight(0xffffff, 1.4);
+    key.position.set(1, 2, 1.5);
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.5);
+    fill.position.set(-2, -1, -1.5);
+    scene.add(fill);
+
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.rotateSpeed = 0.9;
+    controls.zoomSpeed = 0.9;
+    controls.panSpeed = 0.8;
+    controls.screenSpacePanning = true;
+    controls.minDistance = 0.01;
+    controls.maxDistance = 100000;
+
+    window.addEventListener('resize', onResize);
+    animate();
+  }
+
+  function onResize() {
+    camera.aspect = $viewport.clientWidth / $viewport.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize($viewport.clientWidth, $viewport.clientHeight);
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  function frameObject(object) {
+    const box = new THREE.Box3().setFromObject(object);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+
+    object.position.sub(center);
+
+    const fitDist = (maxDim / 2) / Math.tan((camera.fov * Math.PI / 180) / 2);
+    camera.position.set(fitDist * 0.7, fitDist * 0.55, fitDist * 0.9);
+    camera.near = maxDim / 1000;
+    camera.far = maxDim * 1000;
+    camera.updateProjectionMatrix();
+
+    controls.target.set(0, 0, 0);
+    controls.minDistance = maxDim * 0.02;
+    controls.maxDistance = maxDim * 10;
+    controls.update();
+  }
+
+  function defaultMaterial() {
+    return new THREE.MeshStandardMaterial({ color: 0x9fb4c7, metalness: 0.25, roughness: 0.55 });
+  }
+
+  // SolidWorks' plain STEP export doesn't carry real per-part appearance
+  // colors (every body comes back the same fallback gray-blue), so instead
+  // we classify each part by name into a realistic shop material — hardware
+  // reads as steel, gears as dark steel, the MG995 servo as its actual blue
+  // plastic case, belts/motor as black, nylon bushings off-white, and
+  // machined/lasercut structural parts as brushed aluminum.
+
+  // Matched against reference photos of the real, assembled robot: the
+  // chassis/brackets are laser-cut translucent orange acrylic (base plate is
+  // the yellow acrylic variant), motor mounts/shaft supports are white 3D
+  // printed brackets, the drive motor is a bare silver-metal can, wheels are
+  // off-white foam/rubber, and the gearbox/belt are black.
+  const ACRYLIC_ORANGE = { color: 0xe8791a, metalness: 0.0, roughness: 0.25, transparent: true, opacity: 0.82, side: THREE.DoubleSide };
+  const ACRYLIC_YELLOW = { color: 0xf5cf1b, metalness: 0.0, roughness: 0.25, transparent: true, opacity: 0.82, side: THREE.DoubleSide };
+
+  const MATERIAL_RULES = [
+    { test: /mg995|servo.*horn/i, spec: { color: 0x2f6fb0, metalness: 0.05, roughness: 0.4  } }, // MG995 servo: real blue plastic case
+    { test: /^baseplate$/i,       spec: ACRYLIC_YELLOW }, // base plate: yellow acrylic
+    { test: /^scoop$|^scoopspacer$/i, spec: { color: 0xf1efe6, metalness: 0.0, roughness: 0.5 } }, // scoop + its base: white
+    { test: /^motor\s*\(/i,       spec: { color: 0xaeb2b8, metalness: 0.6,  roughness: 0.32 } }, // motor: bare silver metal can
+    { test: /^wheel$/i,           spec: { color: 0xece8de, metalness: 0.0,  roughness: 0.65 } }, // wheel: off-white foam/rubber
+    { test: /nylon/i,             spec: { color: 0xe9e3d2, metalness: 0.0,  roughness: 0.55 } }, // nylon bushing
+    { test: /3d printed/i,        spec: { color: 0xf1efe6, metalness: 0.0,  roughness: 0.5  } }, // 3D-printed bracket: white PLA
+    { test: /gear|gearbox/i,      spec: { color: 0x232427, metalness: 0.3,  roughness: 0.45 } }, // gearbox/gears: black housing
+    { test: /retaining ring|^\d{5}[a-z]\d+|washer|standoff|\bscrew\b/i,
+                                  spec: { color: 0xb9bec5, metalness: 0.85, roughness: 0.32 } }, // McMaster steel hardware
+    { test: /pulley|^belt\d.*fullassembly/i, spec: { color: 0x1c1c1c, metalness: 0.1, roughness: 0.8 } }, // belts/pulleys: black rubber/plastic
+    { test: /battery/i,           spec: { color: 0x1f2320, metalness: 0.2, roughness: 0.6 } }, // battery pack wrap
+    { test: /construction/i,      spec: { color: 0x8a8a8a, metalness: 0.1, roughness: 0.7 } }, // reference geometry
+  ];
+
+  function colorForName(name) {
+    const n = name || '';
+    for (const rule of MATERIAL_RULES) {
+      if (rule.test.test(n)) return rule.spec;
+    }
+    // Default: laser-cut translucent orange acrylic (chassis plates/brackets).
+    return ACRYLIC_ORANGE;
+  }
+
+  function buildThreeMesh(meshData) {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(meshData.attributes.position.array, 3));
+    if (meshData.attributes.normal) {
+      geometry.setAttribute('normal', new THREE.Float32BufferAttribute(meshData.attributes.normal.array, 3));
+    }
+    geometry.setIndex(meshData.index.array);
+    if (!meshData.attributes.normal) geometry.computeVertexNormals();
+    const material = new THREE.MeshStandardMaterial(colorForName(meshData.name));
+    return new THREE.Mesh(geometry, material);
+  }
+
+
+  async function loadModel() {
+    const found = await findModel();
+    if (!found) {
+      setStatus('');
+      showOverlay(`
+        <div style="font-size:15px;font-weight:600;color:#fff;">No 3D model file found yet</div>
+        <div style="max-width:520px;">
+          Export <code>FULLASSEMBLY</code> from SolidWorks (File → Save As) as
+          <code>.glb</code>, <code>.3mf</code>, or <code>.stl</code>, and drop it into
+          <code>Projects/TEAM5_FINALCAD copy/</code> using that exact name
+          (e.g. <code>FULLASSEMBLY.stl</code>). This page will pick it up automatically.
+        </div>
+      `);
+      return;
+    }
+
+    setStatus('Loading ' + found.file + '…');
+
+    const onLoaded = (object) => {
+      scene.add(object);
+      frameObject(object);
+      setStatus('');
+    };
+    const onError = (err) => {
+      console.error(err);
+      setStatus('');
+      showOverlay(`<div style="color:#f2a; font-weight:600;">Failed to load "${found.file}": ${err.message || err}</div>`);
+    };
+
+    if (found.type === 'stl') {
+      new STLLoader().load(found.url, (geometry) => {
+        geometry.computeVertexNormals();
+        const mesh = new THREE.Mesh(geometry, defaultMaterial());
+        onLoaded(mesh);
+      }, undefined, onError);
+    } else if (found.type === '3mf') {
+      new ThreeMFLoader().load(found.url, onLoaded, undefined, onError);
+    } else if (found.type === 'gltf') {
+      new GLTFLoader().load(found.url, (gltf) => onLoaded(gltf.scene), undefined, onError);
+    } else if (found.type === 'step') {
+      setStatus('Loading ' + found.file + '… (tessellating CAD geometry, may take a moment)');
+      try {
+        const occt = await occtimportjs();
+        const response = await fetch(found.url);
+        const buffer = new Uint8Array(await response.arrayBuffer());
+        const result = occt.ReadStepFile(buffer, null);
+        if (!result.success || !result.meshes || result.meshes.length === 0) {
+          throw new Error('OpenCascade could not read any geometry from this file');
+        }
+        const group = new THREE.Group();
+        for (const mesh of result.meshes) {
+          group.add(buildThreeMesh(mesh));
+        }
+        onLoaded(group);
+      } catch (err) {
+        onError(err);
+      }
+    }
+  }
+
+  initScene();
+  loadModel();
+</script>
+</body>
+</html>

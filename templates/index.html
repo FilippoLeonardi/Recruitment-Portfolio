@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio | Filippo Leonardi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- ═══════════════════ LOADER ═══════════════════ -->
+<div id="loader" class="loader">
+  <div class="loader-inner">
+    <div class="loader-ring"></div>
+    <p class="loader-label">Loading</p>
+  </div>
+</div>
+
+<!-- ═══════════════════ NAVBAR ═══════════════════ -->
+<nav id="navbar" class="navbar">
+  <div class="nav-wrap">
+    <a href="#about" class="nav-logo">
+      Filippo Leonardi
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#about"    class="nav-link active">About</a></li>
+      <li><a href="#projects" class="nav-link">Projects</a></li>
+      <li><a href="#research" class="nav-link">Research</a></li>
+      <li><a href="#contact"  class="nav-link">Contact</a></li>
+    </ul>
+    <div class="nav-right">
+      <button id="themeToggle" class="theme-btn" title="Toggle theme">
+        <i class="fas fa-moon" id="themeIcon"></i>
+      </button>
+      <a href="#contact" class="hire-btn">Hire Me</a>
+      <button id="hamburger" class="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════ ABOUT ═══════════════════ -->
+<section id="about" class="section hero">
+  <canvas id="particlesCanvas"></canvas>
+  <div class="container">
+    <div class="hero-grid">
+
+      <!-- TEXT ── Left Column -->
+      <div class="hero-text" data-aos="fade-right">
+        <div class="avail-badge">
+          <span class="pulse-dot"></span> Available for Opportunities
+        </div>
+        <p class="greeting">Hello, I'm</p>
+        <!-- ✏️ CHANGE: Replace "Your Name" -->
+        <h1 class="hero-name">Filippo Leonardi</h1>
+        <div class="hero-title-row">
+          <span class="tw-prefix">I'm a&nbsp;</span>
+          <span id="typewriter" class="tw-text"></span>
+          <span class="tw-cursor">|</span>
+        </div>
+        <!-- ✏️ CHANGE: Write your own bio -->
+        <p class="hero-bio">
+          A passionate student / professional with a love for solving
+          complex problems and strategic decision-making. I combine analytical thinking with a 
+          data-driven approach to solve complex challenges and 
+          uncover meaningful opportunities. In my free time, I love playing soccer, climbing, and tinkering with electronics.
+          <!--
+          I blend hardware intuition with software skills to
+          build impactful, real-world solutions.
+          -->
+
+        </p>
+        <!-- ✏️ CHANGE: Update your skills -->
+        <div class="chips">
+          <span class="chip">Python/HTML/JavaScript</span>
+          <span class="chip">Financial Modeling</span>
+          <span class="chip">Machine Learning</span>
+          <span class="chip">Excel</span>
+          <span class="chip">Data Analysis</span>
+          <span class="chip">CAD/CAM</span>
+          <span class="chip">Machining</span>
+          <span class="chip">Public Speaking</span>
+        </div>
+        <!-- ✏️ CHANGE: Update stats numbers via data-target -->
+        <div class="hero-stats">
+          <div class="stat">
+            <div class="stat-val"><span class="cnt" data-target="3">0</span><span class="plus">+</span></div>
+            <span class="stat-lbl">Work Exp.</span>
+          </div>
+          <div class="stat-sep"></div>
+          <div class="stat">
+            <div class="stat-val"><span class="cnt" data-target="8">0</span><span class="plus">+</span></div>
+            <span class="stat-lbl">Projects</span>
+          </div>
+          <div class="stat-sep"></div>
+        </div>
+        <div class="hero-btns">
+          <a href="#projects" class="btn btn-primary">
+            View My Work <i class="fas fa-arrow-right"></i>
+          </a>
+          <a href="#" class="btn btn-outline" onclick="openDocViewer('static/images/Resume_Finance (2).pdf', 'Filippo Leonardi - Resume'); return false;">
+            <i class="fas fa-download"></i> Download CV
+          </a>
+        </div>
+      </div>
+
+      <!-- IMAGES ── Right Column -->
+      <div class="hero-imgs" data-aos="fade-left">
+        <!-- Main profile image -->
+        <div class="main-img-wrap">
+          <div class="img-frame main-frame">
+            <img src="{{ url_for('static', filename='images/profileimg.jpg') }}"
+            alt="Filippo Leonardi"
+            style="width:100%; height:100%; object-fit:cover; border-radius:22px;">
+          </div>
+          <div class="ring r1"></div>
+          <div class="ring r2"></div>
+          <div class="fl-badge b1"><i class="fas fa-graduation-cap"></i> B.S. Mechanical Engineering</div>
+        </div>
+          
+
+</div>
+          </div>
+
+    </div><!-- /hero-grid -->
+  </div>
+  <div class="scroll-hint"><div class="sh-dot"></div><span>Scroll</span></div>
+</section>
+
+<!-- ═══════════════════ PROJECTS & INTERNSHIPS ═══════════════════ -->
+<section id="projects" class="section">
+  <div class="container">
+    <div class="sec-head" data-aos="fade-up">
+      <span class="sec-tag">// My Work</span>
+      <h2 class="sec-title">Projects &amp; <span class="grad">Internships</span></h2>
+      <p class="sec-sub">A showcase of engineering/financial projects and professional experience</p>
+    </div>
+
+    <!-- Tab Switcher -->
+    <div class="tabs" data-aos="fade-up">
+      <button class="tab-btn active" data-tab="projects">
+        <i class="fas fa-code-branch"></i> Projects <span class="tc">8</span>
+      </button>
+      <button class="tab-btn" data-tab="internships">
+        <i class="fas fa-briefcase"></i> Internships <span class="tc">3</span>
+      </button>
+    </div>
+
+    <!-- ── PROJECTS TAB ── -->
+    <div id="projects-tab" class="tab-panel active">
+      <div class="cards-grid">
+
+        <!-- PROJECT CARD 1 -->
+        <div class="proj-card" data-aos="fade-up" data-aos-delay="100">
+          <div class="card-img-wrap">
+            <img src="static/images/LBO_background.jpeg" alt="Financial Modeling Project" class="card-img">            
+            <div class="ph card-ph" data-icon="fa-robot" style="--ph-hue:220"></div>
+            <div class="card-overlay"><span class="cy-badge">2026 - Independent Study</span></div>
+          </div>
+          <div class="card-body">
+            <div class="tag-row">
+              <span class="tag t-blue">Python</span>
+              <span class="tag t-cyan">LBO Modeling</span>
+              <span class="tag t-purple">Excel</span>
+            </div>
+            <!-- ✏️ CHANGE: Update title, description, links -->
+            <h3 class="card-title">Automated LBO Valuation Model</h3>
+            <p class="card-desc">Designed and implemented a Python-powered LBO tool that requires only essential financial assumptions to automatically generate a fully populated Excel model, automating valuation, debt schedules, cash flow projections, and investor return calculations. </p>
+            <div class="card-foot">
+              <div class="ic-links">
+                <a href="#" class="ic-btn" title="Live Demo"><i class="fas fa-external-link-alt"></i></a>
+              </div>
+              <button class="det-btn" onclick="openModal('p1')">Details <i class="fas fa-arrow-right"></i></button>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- PROJECT CARD 2 -->
+        <div class="proj-card" data-aos="fade-up" data-aos-delay="200">
+          <div class="card-img-wrap">
+          <img src="static/images/certificate.jpeg" alt="Financial Modeling Project" class="card-img">            
+          <div class="card-overlay"><span class="cy-badge">2026 - Independent/Finance Course</span></div>
+          </div>
+          <div class="card-body">
+            <div class="tag-row">
+              <span class="tag t-green">Valuation Analysis</span>
+              <span class="tag t-orange">Three-Statement Forecasting</span>
+              <span class="tag t-blue">Corporate Finance</span>
+            </div>
+            <h3 class="card-title">Financial Modeling and Valuation Intensive</h3>
+            <p class="card-desc">Completed an intensive financial modeling course with City Investment Training, covering accounting, three-statement modeling, valuation, LBO analysis, and M&A accretion/dilution, including a full Burger King case study model built from first principles.</p>
+            <div class="card-foot">
+              <div class="ic-links">
+                <a href="#" class="ic-btn" title="Report"><i class="fas fa-file-pdf"></i></a>
+              </div>
+              <button class="det-btn" onclick="openModal('p2')">Details <i class="fas fa-arrow-right"></i></button>
+            </div>
+          </div>
+        </div>
+
+
+
+        <!-- PROJECT CARD 3 -->
+        <div class="proj-card" data-aos="fade-up" data-aos-delay="200">
+          <div class="card-img-wrap">
+            <img src="static/images/NN+Poly.jpeg" alt="NN+Poly" class="card-img">            
+            <div class="card-overlay"><span class="cy-badge">2026 - Dallara Internship</span></div>
+          </div>
+          <div class="card-body">
+            <div class="tag-row">
+              <span class="tag t-green">Python</span>
+              <span class="tag t-orange">Neural Network Training</span>
+              <span class="tag t-blue">Mathematical Modeling and Statistics</span>
+            </div>
+            <h3 class="card-title">ML Optimization Tool</h3>
+            <p class="card-desc">Developed a hybrid machine learning model in Python to predict aerodynamic coefficients from vehicle state parameters, replacing computationally expensive Kriging interpolation with a polynomial regression–neural network architecture while maintaining <1% prediction error.</p>
+            <div class="card-foot">
+              <div class="ic-links">
+                <a href="#" class="ic-btn" title="Report"><i class="fas fa-file-pdf"></i></a>
+              </div>
+              <button class="det-btn" onclick="openModal('p3')">Details <i class="fas fa-arrow-right"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PROJECT CARD 4 -->
+        <div class="proj-card" data-aos="fade-up" data-aos-delay="300">
+          <div class="card-img-wrap">
+            <img src="static/images/robot ES 51 /IMG_4072.jpg" alt="Embedded Systems Robotics Project" class="card-img"> 
+            <div class="card-overlay"><span class="cy-badge">2026 - Harvard University</span></div>
+          </div>
+          <div class="card-body">
+            <div class="tag-row">
+              <span class="tag t-red">CAD</span>
+              <span class="tag t-blue">Embedded Systems</span>
+              <span class="tag t-green">Machining</span>
+            </div>
+            <h3 class="card-title">Embedded Systems Robotics Project</h3>
+            <p class="card-desc">End-to-end integrated robotics system with custom chassis, motor control, and mechanical design, integrating CAD, electronics, and wireless control systems for competitive task-based navigation and object manipulation.</p>
+            <div class="card-foot">
+              <div class="ic-links">
+              </div>
+              <button class="det-btn" onclick="openModal('p4')">Details <i class="fas fa-arrow-right"></i></button>
+            </div>
+          </div>
+        </div>
+
+
+
+        <!-- PROJECT CARD 5 -->
+        <div class="proj-card" data-aos="fade-up" data-aos-delay="300">
+          <div class="card-img-wrap">
+            <img src="static/images/PlotOne.jpeg" alt="PlotOne" class="card-img"> 
+            <div class="card-overlay"><span class="cy-badge">2026 - Dallara Internship</span></div>
+          </div>
+          <div class="card-body">
+            <div class="tag-row">
+              <span class="tag t-red">Python</span>
+              <span class="tag t-blue">Data Visualization and Data Analysis</span>
+              <span class="tag t-green">Aerodynamics Engineering</span>
+            </div>
+            <h3 class="card-title">PlotOne - Interactive Aerodynamics Data Visualization Platform</h3>
+            <p class="card-desc">  Developed a Python-based data visualization platform for vehicle dynamics engineers to analyze aerodynamic and simulation datasets through interactive 2D/3D plotting, advanced signal processing, and customizable analysis tools. The software integrated directly with the optimization tool used in the Veichle Dynamics department, enabling immediate aerodynamic analysis without relying on external visualization softwares.</p>
+            <div class="card-foot">
+              <div class="ic-links">
+              </div>
+              <button class="det-btn" onclick="openModal('p5')">Details <i class="fas fa-arrow-right"></i></button>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- PROJECT CARD 6 -->
+        <div class="proj-card" data-aos="fade-up" data-aos-delay="300">
+          <div class="card-img-wrap">
+            <img src="static/images/Form SAE/IMG_4771.jpg" alt="FSAE" class="card-img">
+            <div class="card-overlay"><span class="cy-badge">2025/2026 - Harvard FSAE Club</span></div>
+          </div>
+          <div class="card-body">
+            <div class="tag-row">
+              <span class="tag t-blue">Suspension Design</span>
+              <span class="tag t-green">CAD & FEA</span>
+              <span class="tag t-orange">Vehicle Dynamics</span>
+              <span class="tag t-cyan">Technical Leadership and Project Management</span>
+              <span class="tag t-red">Sponsorship Acquisition and Supplier Negotiation</span>
+            </div>
+            <h3 class="card-title">Formula SAE - Crimson Motorsports</h3>
+            <p class="card-desc"> As Mechanical Engineering Team Lead for Harvard's Formula SAE team, I led the design and development of the vehicle's suspension system, combining analytical modeling, CAD design, and engineering trade-off analysis with budget management and procurement to maximize performance within cost constraints.</p>
+            <div class="card-foot">
+              <div class="ic-links">
+              </div>
+              <button class="det-btn" onclick="openModal('p6')">Details <i class="fas fa-arrow-right"></i></button>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- PROJECT CARD 7 -->
+        <div class="proj-card" data-aos="fade-up" data-aos-delay="300">
+          <div class="card-img-wrap">
+            <img src="static/images/Robotics/Robo_logo.jpg" alt="Robotics" class="card-img contain">
+            <div class="card-overlay"><span class="cy-badge">2025 - Harvard Robotics Club</span></div>
+          </div>
+          <div class="card-body">
+            <div class="tag-row">
+              <span class="tag t-blue">Robotic Manipulation</span>
+              <span class="tag t-red">Mechanism Design</span>
+              <span class="tag t-green">Motion Planning</span>
+              <span class="tag t-orange">Design Optimization</span>
+              <span class="tag t-purple">Systems Integration</span>
+              <span class="tag t-cyan">Interdisciplinary Collaboration</span>
+              <span class="tag t-yellow">Systems Thinking</span>
+              <span class="tag t-green"> Fundraising</span>
+            </div>
+            <h3 class="card-title">Harvard Undergraduate Robotics Club</h3>
+            <p class="card-desc"> I worked as a Mechanical Systems Developer for Harvard's Mars Rover Team, contributing to the design and optimization of the rover's mobility and manipulation systems. My work focused on suspension architecture, robotic arm development, and system-level performance optimization, combining mechanical design, control algorithms, and rapid prototyping while also supporting the team's fundraising and industry outreach efforts.</p>
+            <div class="card-foot">
+              <div class="ic-links">
+              </div>
+              <button class="det-btn" onclick="openModal('p7')">Details <i class="fas fa-arrow-right"></i></button>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- PROJECT CARD 8 -->
+        <div class="proj-card" data-aos="fade-up" data-aos-delay="300">
+          <div class="card-img-wrap">
+            <img src="static/images/Machine Shop/Home_pic.jpeg" alt="Machine Shop" class="card-img fit">
+            <div class="card-overlay"><span class="cy-badge">2025/2026 - Machine Shop Advanced Training (Individual)</span></div>
+          </div>
+          <div class="card-body">
+            <div class="tag-row">
+              <span class="tag t-blue">Precision Machining</span>
+              <span class="tag t-red">CNC Manufacturing</span>
+              <span class="tag t-green">Manual Lathe Operation</span>
+              <span class="tag t-orange">Metrology & Tolerancing</span>
+              <span class="tag t-purple">Technical Drawing Interpretation</span>
+              <span class="tag t-cyan">Attention to Detail</span>
+              <span class="tag t-yellow">Problem Solving</span>
+              <span class="tag t-red">Manufacturing Planning</span>
+            </div>
+            <h3 class="card-title">Lucy Engine Manufacturing and Assembly</h3>
+            <p class="card-desc"> Built a fully functional compressed-air powered Lucy engine from raw aluminum, brass, steel, and acrylic stock, machining every component from engineering drawings using manual and CNC equipment. Applied precision manufacturing techniques—including turning, milling, drilling, threading, and surface finishing—to produce tight-tolerance parts before completing the engine's final assembly and functional validation.</p>
+            <div class="card-foot">
+              <div class="ic-links">
+              </div>
+              <button class="det-btn" onclick="openModal('p8')">Details <i class="fas fa-arrow-right"></i></button>
+            </div>
+          </div>
+        </div>
+
+
+      </div>
+    </div><!-- /projects-tab -->
+
+
+
+
+    <!-- ── INTERNSHIPS TAB ── -->
+    <div id="internships-tab" class="tab-panel">
+      <div class="intern-list">
+
+        <!-- INTERNSHIP 1 -->
+        <div class="intern-card" data-aos="fade-up" data-aos-delay="100">
+          <div class="intern-img-wrap">
+            <img src="{{ url_for('static', filename='images/images.jpg') }}"  alt="Company 1">
+            <div class="ph intern-ph" data-icon="fa-building" style="--ph-hue:220"></div>
+          </div>
+          <div class="intern-body">
+            <div class="intern-top">
+              <div>
+                <!-- ✏️ CHANGE: Update role, company, dates, location, description -->
+                <h3 class="intern-role">Vehicle Dynamics Engineer and Project Developement Intern (AI department)</h3>
+                <p class="intern-co"><i class="fas fa-building"></i> Dallara Automobili</p>
+              </div>
+              <div class="intern-meta">
+                <span><i class="fas fa-calendar"></i> May 2026 – July 2026</span>
+                <span><i class="fas fa-map-marker-alt"></i> Parma, Italy</span>
+              </div>
+            </div>
+            <p class="intern-title">
+            During my internship I developed several Python-based tools to improve aerodynamic analysis and engineering workflows.
+            </p>
+
+            <ul class="intern-list">
+            <li>I built an interactive visualization platform capable of displaying five-dimensional aerodynamic datasets through 2D and 3D plots, as well as performing advanced data analysis, creating the first internal plotting tool for the firm, which is now being gradually implemented across most departments.</li>
+            <li>I developed a hybrid machine learning model combining polynomial regression with a neural network to predict aerodynamic coefficients, achieving prediction errors below 1%. This tool has been integrated into a larger optimization platform within the Vehicle Dynamics department, enabling advanced analysis of large batches of wind tunnel data.</li>
+            <li>As part of a broader initiative to reduce wind tunnel testing, I created an optimization tool that replicated aerodynamic maps using vehicle symmetry, eliminating redundant tests and significantly reducing development costs.</li>
+            </ul>
+            <div class="tag-row">
+              <span class="tag t-blue">Vehicle Dynamics</span>
+              <span class="tag t-red">Systems Thinking</span>
+              <span class="tag t-yellow">Team work and Problem Solving</span>
+              <span class="tag t-cyan">Python/JS/HTML</span>
+              <span class="tag t-purple">Statistical Modeling & Validation</span>
+              <span class="tag t-green">Project Management</span>
+              <span class="tag t-orange">Numerical Modeling</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- INTERNSHIP 2 -->
+        <div class="intern-card" data-aos="fade-up" data-aos-delay="200">
+          <div class="intern-img-wrap">
+            <div class="ph intern-ph" data-icon="fa-industry" style="--ph-hue:265"></div>
+          </div>
+          <div class="intern-body">
+            <div class="intern-top">
+              <div>
+                <h3 class="intern-role">AI Evaluation & Prompt Engineer</h3>
+                <p class="intern-co"><i class="fas fa-building"></i> Another Company</p>
+              </div>
+              <div class="intern-meta">
+                <span><i class="fas fa-calendar"></i> August 2026 - Present</span>
+                <span><i class="fas fa-map-marker-alt"></i> Remote </span>
+              </div>
+            </div>
+            <p class="intern-desc"> Designed evaluation prompts to compare the performance of frontier AI language models from OpenAI and Anthropic, creating carefully structured reasoning tasks that aimed to highlight differences in how the models solved complex problems and thus reached different answers. I then analyzed and compared model responses to identify strengths, weaknesses, and patterns in accuracy. </p>
+            <div class="tag-row">
+              <span class="tag t-orange">Python</span>
+              <span class="tag t-purple">Data Analysis</span>
+              <span class="tag t-red">R&amp;D</span>
+              <span class="tag t-green">AI Model Evaluation</span>
+              <span class="tag t-blue">LLM's and Prompt Engineering</span>
+              <span class="tag t-white">Independent Research</span>
+              <span class="tag t-cyan">Critical Thinking</span>
+            </div>
+          </div>
+        </div>
+        
+
+
+
+        <!-- INTERNSHIP 3 -->
+        <div class="intern-card" data-aos="fade-up" data-aos-delay="200">
+          <div class="intern-img-wrap intern-img-wrap--split">
+            <img src="{{ url_for('static', filename='images/Officina 1.jpg') }}" alt="Officina Diesel workshop">
+            <img src="{{ url_for('static', filename='images/officina 2.jpeg') }}" alt="Officina Diesel logo">
+          </div>
+          <div class="intern-body">
+            <div class="intern-top">
+              <div>
+                <h3 class="intern-role">Marine Propulsion and Engine Systems Intern</h3>
+                <p class="intern-co"><i class="fas fa-building"></i>  Officia Diesel</p>
+              </div>
+              <div class="intern-meta">
+                <span><i class="fas fa-calendar"></i> August 2024 - September 2024</span>
+                <span><i class="fas fa-map-marker-alt"></i> Genova, Italy </span>
+              </div>
+            </div>
+            <p class="intern-desc"> During this internship, I gained experience across both the administrative and engineering departments of the company. I analyzed procurement workflows, supplier relationships, budgeting, and the financial operations supporting large-scale maintenance projects, developing an understanding of cost management and industrial business processes. On the engineering side, I worked alongside technicians on the overhaul and maintenance of large marine diesel engines, including the disassembly and servicing of the cylinder head of a Sulzer ZA40S engine aboard a passenger ferry, while learning industrial diagnostics, machining processes, and workshop operations. </p>
+            <div class="tag-row">
+              <span class="tag t-green">Procurement & Supply Chain</span>
+              <span class="tag t-orange">Budgeting & Cost Analysis</span>
+              <span class="tag t-cyan">Supplier Relationship Management</span>
+              <span class="tag t-orange">Industrial Operations</span>
+              <span class="tag t-blue">Marine Diesel Engines</span>
+              <span class="tag t-indigo">Mechanical Diagnostics</span>
+              <span class="tag t-red">Engine Maintenance</span>
+              <span class="tag t-purple">Problem Solving</span>
+              <span class="tag t-blue">Cross-Functional Collaboration</span>
+              <span class="tag t-green">Adaptability</span>
+            </div>
+            <div class="intern-foot">
+              <a href="#" class="det-btn" onclick="openDocViewer('static/images/MR. LEONARDI LETTER.pdf', 'Reference Letter'); return false;">
+                <i class="fas fa-file-signature"></i> Reference Letter
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /internships-tab -->
+
+  </div>
+</section>
+
+
+<!-- ═══════════════════ RESEARCH ═══════════════════ -->
+<section id="research" class="section research-sec">
+  <div class="container">
+    <div class="sec-head" data-aos="fade-up">
+      <span class="sec-tag">// Academia</span>
+      <h2 class="sec-title">Research
+      <p class="sec-sub">Contributing to the advancement of engineering knowledge</p>
+    </div>
+
+    <div class="research-grid">
+
+      <!-- RESEARCH 1 -->
+      <div class="res-card" data-aos="fade-up" data-aos-delay="100">
+        <div class="res-img-wrap">
+          <img src="{{ url_for('static', filename='images/RC_circuit.jpg') }}" alt="Paper 1">
+          <div class="ph res-ph" data-icon="fa-atom" style="--ph-hue:220"></div>
+        </div>
+        <div class="res-body">
+          <div class="res-meta">
+            <!-- ✏️ CHANGE: Update journal, year, title, authors, abstract -->
+            <span class="res-journal"><i class="fas fa-book-open"></i></span>
+            <span class="res-year">2025</span>
+          </div>
+          <h3 class="res-title">Prediction and Analysis of Low-Pass and High-Pass RC Filters in Musical Note Isolation</h3>
+          <p class="res-authors"><i class="fas fa-users"></i> Filippo Leonardi, Advisor: Matteo Merlo </p>
+          <p class="research-question"> Research Question: How can Resistance and Capacitance be used to Create Low-Pass and High-Pass Filters to Detect the Notes Making up a Chord?</p>
+          <div class="res-foot">
+            <div class="res-stats">
+            </div>
+            <a href="#" class="res-btn" onclick="openModal('r1'); return false;"><i class="fas fa-external-link-alt"></i> View Details</a>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ CONTACT ═══════════════════ -->
+<section id="contact" class="section">
+  <div class="container">
+    <div class="sec-head" data-aos="fade-up">
+      <span class="sec-tag">// Let's Connect</span>
+      <h2 class="sec-title">Get In <span class="grad">Touch</span></h2>
+    </div>
+
+    <div class="contact-grid contact-grid--solo">
+
+      <!-- LEFT: Info -->
+      <div class="contact-left" data-aos="fade-right">
+
+        <!-- Contact Items -->
+        <div class="ct-items">
+          <!-- ✏️ CHANGE: Update your contact details -->
+          <div class="ct-item">
+            <div class="ct-icon"><i class="fas fa-envelope"></i></div>
+            <div>
+              <p class="ct-label">Email</p>
+              <a href="mailto:fleonardi@college.harvard.edu" class="ct-val">fleonardi@college.harvard.edu</a>
+            </div>
+          </div>
+          <div class="ct-item">
+            <div class="ct-icon"><i class="fas fa-phone"></i></div>
+            <div>
+              <p class="ct-label">Phone</p>
+              <a href="tel:+1 3392131925" class="ct-val">+1 (339) 213-1925</a>
+            </div>
+          </div>
+          <div class="ct-item">
+            <div class="ct-icon"><i class="fas fa-map-marker-alt"></i></div>
+            <div>
+              <p class="ct-label">Location</p>
+              <p class="ct-val">Cambridge, MA</p>
+            </div>
+          </div>
+        </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ FOOTER ═══════════════════ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="nav-logo">
+        <span class="lb"></span> Filippo Leonardi <span class="lb"></span>
+      </div>
+      <div class="footer-links">
+        <a href="#about">About</a>
+        <a href="#projects">Projects</a>
+        <a href="#research">Research</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════ BACK TO TOP ═══════════════════ -->
+<button id="backToTop" class="btt" title="Back to top">
+  <i class="fas fa-chevron-up"></i>
+</button>
+
+<!-- ═══════════════════ PROJECT MODALS ═══════════════════ -->
+<div id="modalOverlay" class="modal-overlay" onclick="closeModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ IN-APP CALCULATOR (IFRAME) ═══════════════════ -->
+<div id="calcOverlay" class="modal-overlay calc-overlay">
+  <div class="modal-box calc-box" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeCalculator()"><i class="fas fa-times"></i></button>
+    <iframe id="calcFrame" class="calc-frame" title="LBO Calculator" src=""></iframe>
+  </div>
+</div>
+
+<!-- ═══════════════════ IMAGE GALLERY ═══════════════════ -->
+<div id="galleryOverlay" class="modal-overlay" onclick="closeGallery()">
+  <div class="modal-box gallery-box" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeGallery()"><i class="fas fa-times"></i></button>
+    <button class="gallery-nav gallery-prev" onclick="galleryStep(-1)"><i class="fas fa-chevron-left"></i></button>
+    <img id="galleryImg" class="gallery-img" src="" alt="Project photo">
+    <video id="galleryVideo" class="gallery-img" controls playsinline style="display:none"></video>
+    <button class="gallery-nav gallery-next" onclick="galleryStep(1)"><i class="fas fa-chevron-right"></i></button>
+    <div class="gallery-counter" id="galleryCounter"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ DOCUMENT VIEWER (PDF) ═══════════════════ -->
+<div id="docOverlay" class="modal-overlay" onclick="closeDocViewer()">
+  <div class="modal-box doc-box" onclick="event.stopPropagation()">
+    <div class="doc-bar">
+      <span class="doc-title" id="docTitle"></span>
+      <a class="doc-dl" id="docDownload" download><i class="fas fa-download"></i> Download</a>
+      <button class="modal-close" onclick="closeDocViewer()"><i class="fas fa-times"></i></button>
+    </div>
+    <iframe id="docFrame" class="doc-frame" title="Document" src=""></iframe>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
