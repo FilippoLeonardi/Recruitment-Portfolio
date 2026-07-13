@@ -20,13 +20,10 @@ def add_cache_headers(resp):
     # Let browsers cache static assets so repeat visits load instantly.
     path = request.path
     if path.startswith('/static/') or path.startswith('/Projects/'):
-        if path.lower().endswith('.pdf'):
-            # Documents (resume, letters, papers) get replaced in place, so
-            # always revalidate — the server returns a cheap 304 when the file
-            # is unchanged, but a swapped file shows up immediately.
-            resp.headers['Cache-Control'] = 'no-cache'
-        else:
-            resp.headers['Cache-Control'] = 'public, max-age=86400'  # 1 day
+        # Assets (images, PDFs, etc.) get replaced in place, so always
+        # revalidate. The server returns a cheap 304 when the file is
+        # unchanged, but a swapped file shows up immediately.
+        resp.headers['Cache-Control'] = 'no-cache'
     return resp
 
 # Custom Excel number formats the in-browser viewer's parser can't handle,
