@@ -45,7 +45,10 @@
       "Bash(curl -sS --max-time 30 https://filippo-portfolio.onrender.com/)",
       "Bash(grep -i '\\\\.pdf$')",
       "Bash(git check-ignore *)",
-      "Bash(git -c user.email=fleonardi@college.harvard.edu -c 'user.name=Filippo Leonardi' commit -q -m 'Fix static assets 404 on Render \\(case-sensitive Linux\\) *)"
+      "Bash(git -c user.email=fleonardi@college.harvard.edu -c 'user.name=Filippo Leonardi' commit -q -m 'Fix static assets 404 on Render \\(case-sensitive Linux\\) *)",
+      "Bash(gh variable *)",
+      "Bash(gh workflow *)",
+      "Bash(gh run *)"
     ]
   }
 }
