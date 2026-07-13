@@ -22,7 +22,14 @@
       "Bash(./venv/bin/python --version)",
       "Bash(grep -iE \"procfile|render|gitignore|runtime|python-version|\\\\.git$\")",
       "Bash(./venv/bin/pip install *)",
-      "Bash(./venv/bin/python -c \"from app import app; print\\('WSGI callable OK:', app\\)\")"
+      "Bash(./venv/bin/python -c \"from app import app; print\\('WSGI callable OK:', app\\)\")",
+      "Bash(git -c user.email=fleonardi@college.harvard.edu -c 'user.name=Filippo Leonardi' commit -q -m 'Prepare portfolio for deployment \\(gunicorn, Render config\\) *)",
+      "Bash(git fetch *)",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Bash(git remote *)",
+      "Bash(git -c user.email=fleonardi@college.harvard.edu -c 'user.name=Filippo Leonardi' commit -q .claude/settings.local.json -m 'Update local Claude Code settings *)",
+      "Bash(git ls-remote *)"
     ]
   }
 }
