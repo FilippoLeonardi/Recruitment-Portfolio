@@ -412,6 +412,23 @@ const MODAL_DATA = {
       'Developed and cadded housing structures for the rover\'s electronics and battery systems, focusing on easy accessibility for maintainence and upgrades',
       'Contributed to sponsorship and fundraising initiatives by preparing technical proposals, engaging with corporate partners and private donors, and helping secure over $10,000 from various sources.',
     ],
+    images:[
+      'static/images/Robotics images/Video 1.mov',
+      'static/images/Robotics images/image 2.jpg',
+      'static/images/Robotics images/image 3.jpg',
+      'static/images/Robotics images/Video 4.mov',
+      'static/images/Robotics images/Image 5.jpg',
+      'static/images/Robotics images/Image 6.jpg',
+      'static/images/Robotics images/Image 7.jpg',
+      'static/images/Robotics images/Image 8.jpg',
+      'static/images/Robotics images/Image 9.jpg',
+      'static/images/Robotics images/Image 10.jpg',
+      'static/images/Robotics images/Image 11.jpg',
+      'static/images/Robotics images/Image 12.jpg',
+      'static/images/Robotics images/Image 13.jpg',
+      'static/images/Robotics images/Video 14.mov',
+    ],
+    imagesLabel:'See the Rover in Action',
   },
 
 
