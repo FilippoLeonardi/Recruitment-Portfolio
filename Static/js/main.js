@@ -123,7 +123,7 @@ const Particles = (() => {
 
 /* ══════════ 4. TYPEWRITER ══════════ */
 const Typewriter = (() => {
-  const WORDS   = ['Mechanical Engineer','Finance Engineer','AI / ML Enthusiast','Research Engineer','Data-Driven Problem Solver', 'Adaptable'];
+  const WORDS   = ['a Mechanical Engineer','a Business-Minded Engineer', 'an AI / ML Enthusiast','a Research Engineer','a Data-Driven Problem Solver', 'Adaptable'];
   let wi = 0, ci = 0, del = false;
 
   function tick() {
