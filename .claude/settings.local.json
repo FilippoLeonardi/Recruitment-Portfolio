@@ -68,7 +68,9 @@
       "Bash(command -v pdftotext)",
       "Bash(pdftotext -layout /tmp/deployed_resume.pdf -)",
       "Bash(./venv/bin/gunicorn app:app --workers 2 --bind 127.0.0.1:5067 --daemon --pid /tmp/gb.pid --error-logfile /tmp/gb.err)",
-      "Bash(curl -s http://127.0.0.1:5067/)"
+      "Bash(curl -s http://127.0.0.1:5067/)",
+      "Bash(./venv/bin/gunicorn app:app --workers 2 --bind 127.0.0.1:5068 --daemon --pid /tmp/gc.pid --error-logfile /tmp/gc.err)",
+      "Bash(curl -s http://127.0.0.1:5068/)"
     ]
   }
 }

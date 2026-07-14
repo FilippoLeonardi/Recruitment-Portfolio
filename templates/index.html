@@ -56,11 +56,6 @@
         <p class="greeting">Hello, I'm</p>
         <!-- ✏️ CHANGE: Replace "Your Name" -->
         <h1 class="hero-name">Filippo Leonardi</h1>
-        <div class="hero-title-row">
-          <span class="tw-prefix">I'm&nbsp;</span>
-          <span id="typewriter" class="tw-text"></span>
-          <span class="tw-cursor">|</span>
-        </div>
         <!-- ✏️ CHANGE: Write your own bio -->
         <p class="hero-bio">
           A passionate student / professional with a love for solving
@@ -101,7 +96,7 @@
           <a href="#projects" class="btn btn-primary">
             View My Work <i class="fas fa-arrow-right"></i>
           </a>
-          <a href="#" class="btn btn-outline" onclick="openDocViewer('{{ versioned('images/Resume_Finance (2).pdf') }}', 'Filippo Leonardi - Resume'); return false;">
+          <a href="{{ versioned('images/Resume_Finance (2).pdf') }}" class="btn btn-outline" onclick="openDocViewer(this.getAttribute('href'), 'Filippo Leonardi - Resume'); return false;">
             <i class="fas fa-download"></i> Download CV
           </a>
         </div>
