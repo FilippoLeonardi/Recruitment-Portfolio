@@ -810,8 +810,8 @@ a.ct-val:hover { color:var(--blue); }
   border:1px solid #fff; box-sizing:border-box;
 }
 .modal-image.framed {
-  width:calc(100% - 44px); height:300px; margin:22px auto 0;
-  object-fit:cover; box-sizing:border-box;
+  display:block; width:calc(100% - 44px); max-width:560px; height:auto;
+  margin:22px auto 0; box-sizing:border-box;
   border:7px solid #fff; border-radius:10px;
   box-shadow:0 6px 24px rgba(0,0,0,.28);
 }
