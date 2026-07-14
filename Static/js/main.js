@@ -121,26 +121,6 @@ const Particles = (() => {
   return { init };
 })();
 
-/* ══════════ 4. TYPEWRITER ══════════ */
-const Typewriter = (() => {
-  const WORDS   = ['a Mechanical Engineer','a Business-Minded Engineer', 'an AI / ML Enthusiast','a Research Engineer','a Data-Driven Problem Solver', 'Adaptable'];
-  let wi = 0, ci = 0, del = false;
-
-  function tick() {
-    const el = document.getElementById('typewriter');
-    if (!el) return;
-    const w = WORDS[wi];
-    if (del) { el.textContent = w.slice(0, --ci); }
-    else     { el.textContent = w.slice(0, ++ci); }
-    let t = del ? 55 : 95;
-    if (!del && ci === w.length) { t = 2000; del = true; }
-    else if (del && ci === 0)   { del = false; wi = (wi + 1) % WORDS.length; t = 350; }
-    setTimeout(tick, t);
-  }
-
-  return { init: () => tick() };
-})();
-
 /* ══════════ 5. SCROLL ANIMATIONS ══════════ */
 const AOS = (() => {
   function init() {

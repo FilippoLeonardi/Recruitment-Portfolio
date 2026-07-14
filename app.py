@@ -436,5 +436,7 @@ def contact():
                         'message': 'Something went wrong. Please try again.'}), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    # Default to 8000 locally because macOS "AirPlay Receiver" occupies 5000.
+    # Render sets $PORT in production, so this default only affects local runs.
+    port = int(os.environ.get('PORT', 8000))
     app.run(debug=True, host='0.0.0.0', port=port)
