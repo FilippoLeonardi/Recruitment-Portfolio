@@ -2,7 +2,7 @@ import os
 import re
 import sys
 import zipfile
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
 
 # The assets live in a capital-S "Static" folder. Linux (Render) is
 # case-sensitive, so point Flask at it explicitly while keeping the
@@ -13,6 +13,20 @@ app = Flask("Filippo Leonardi's Portfolio",
 PROJECTS_DIR = os.path.join(app.root_path, 'Projects')
 COURSE_MODELS_DIR = os.path.join(PROJECTS_DIR, 'course_models')
 RENDER_CACHE_DIR = os.path.join(COURSE_MODELS_DIR, '_render_cache')
+
+
+@app.context_processor
+def asset_versioning():
+    # Append each asset's modification time as a ?v= tag so that whenever a
+    # file changes its URL changes too, forcing browsers to fetch the fresh
+    # copy instead of a stale cached one.
+    def versioned(filename):
+        try:
+            v = int(os.path.getmtime(os.path.join(app.static_folder, filename)))
+        except OSError:
+            v = 0
+        return url_for('static', filename=filename, v=v)
+    return {'versioned': versioned}
 
 
 @app.after_request

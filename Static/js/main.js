@@ -401,7 +401,7 @@ const MODAL_DATA = {
 
 
   p7: {
-    hue:'265', year:'2025', image:'static/images/Robotics/Robo_logo.jpg',
+    hue:'265', year:'2025', image:'static/images/Robotics images/mars-rover.jpg',
     imagePadLeft:true,
     title:'Harvard Undergraduate Robotics Club',
     tags:[['Robotic Manipulation','t-blue'],['Mechanism Design','t-red'],['Motion Planning','t-green'],['Design Optimization','t-orange'],['Systems Integration','t-purple'],['Interdisciplinary Collaboration','t-cyan'],['Systems Thinking','t-yellow'],['Fundraising','t-green']],
