@@ -939,13 +939,15 @@ li {
 
 
 
-.intern-list {
+.intern-bullets {
     padding-left: 1.5rem;
     margin-top: 0.5rem;
+    margin-bottom: 14px;
 }
 
-.intern-list li {
-    font-size: 0.9rem;   /* Decrease this value to make it smaller */
-    line-height: 1.6;
+.intern-bullets li {
+    font-size: .86rem;
+    color: var(--txt2);
+    line-height: 1.8;
     margin-bottom: 0.75rem;
 }

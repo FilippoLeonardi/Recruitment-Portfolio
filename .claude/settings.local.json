@@ -55,7 +55,15 @@
       "Bash(shasum -a256 /tmp/render_resume.pdf)",
       "Bash(git -c user.email=fleonardi@college.harvard.edu -c 'user.name=Filippo Leonardi' commit -q -m 'Serve PDFs with no-cache so updated documents show immediately *)",
       "Bash(sips -g pixelWidth -g pixelHeight \"Static/images/logo.png\")",
-      "Bash(git -c user.email=fleonardi@college.harvard.edu -c 'user.name=Filippo Leonardi' commit -q -m 'Revalidate all assets immediately; fix AI Prompt Engineer logo framing *)"
+      "Bash(git -c user.email=fleonardi@college.harvard.edu -c 'user.name=Filippo Leonardi' commit -q -m 'Revalidate all assets immediately; fix AI Prompt Engineer logo framing *)",
+      "Bash(python3 -c \"import PIL; print\\('PIL', PIL.__version__\\)\")",
+      "Bash(python3 -c ' *)",
+      "Bash(sips -g pixelWidth -g pixelHeight Static/images/logo.png)",
+      "Bash(PORT=5077 python3 app.py)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5077/)",
+      "Bash(pkill -f \"PORT=5077\")",
+      "Bash(pkill -f \"app.py\")",
+      "Bash(lsof -nP -iTCP:5000 -sTCP:LISTEN)"
     ]
   }
 }
